@@ -75,8 +75,10 @@ const seli = Tnow - m.messageTimestamp.low
 if (seli > Intervalmsg) return console.log((`Pesan ${Intervalmsg} detik yang lalu diabaikan agar tidak nyepam`))
 
 const { type,args, reply,sender,ucapanWaktu,from,botNumber,senderNumber,groupName,groupId,groupMembers,groupDesc,groupOwner,pushname,itsMe,isGroup,mentionByTag,mentionByReply,users,budy,content,body } = m
-const prem = db.data.users[sender].premiumTime !== 0 
 
+// Normalize suspected '@lid' senders to their actual JIDs for consistent checks
+const realSender = conn.getJid ? (conn.getJid(sender) || sender) : sender
+const normalizedOwnerNumbers = ownerNumber.map(n => conn.getJid ? (conn.getJid(n) || n) : n)
 
 if (multi){
 var prefix = /^[°zZ#,.''()√%!¢£¥€π¤ΠΦ&<`™©®Δ^βα¦|/\\©^]/.test(body) ? body.match(/^[°zZ#,.''()√%¢£¥€π¤ΠΦ&<!`™©®Δ^βα¦|/\\©^]/gi) : '.'
@@ -89,7 +91,52 @@ const isCmd = body.startsWith(prefix)
 const isCommand = isCmd? body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase() :""
 const q = args.join(' ')
 const time = moment().tz('Asia/Jakarta').format('HH:mm')
-const isOwner = ownerNumber.includes(sender) || _data.checkDataId ("owner", sender, DataId)
+// Resolve and check owner/premium using normalized JIDs
+const isOwner = normalizedOwnerNumbers.includes(realSender) || ownerNumber.includes(sender) || _data.checkDataId ("owner", realSender, DataId) || _data.checkDataId ("owner", sender, DataId)
+// Import message.js lebih awal agar registrasi dan konstanta pesan sudah tersedia
+await (await import('./message/message.js')).default(prefix,setReply, m, conn)
+// Check premium using resolved sender JID (try realSender first)
+let prem = false
+let u = db.data.users[realSender] || db.data.users[sender]
+let migratedFrom = null
+
+// If still not found, try migrating from numeric variants (legacy keys)
+if (!u) {
+  try {
+    const numeric = m.senderNumber || sender.split('@')[0]
+    const variants = [
+      `${numeric}`,
+      `${numeric}@s.whatsapp.net`,
+      `${numeric}@c.us`
+    ]
+    for (const k of variants) {
+      if (db.data.users && db.data.users[k]) {
+        u = db.data.users[k]
+        // Migrate to resolved sender JID (target)
+        const target = realSender
+        db.data.users[target] = u
+        delete db.data.users[k]
+        migratedFrom = k
+        console.log(chalk.green(`[MIGRATE] Moved user data from ${k} to ${target} (on-the-fly)`))
+        // Ensure u references the migrated object via target
+        u = db.data.users[target]
+        break
+      }
+    }
+  } catch (e) {
+    console.error('Fallback migration failed:', e)
+  }
+}
+
+if (u) {
+  if (u.premium === true) prem = true
+  if (u.premiumTime && (u.premiumTime === Infinity || u.premiumTime > Date.now())) prem = true
+} else {
+  console.log(chalk.yellow(`[DEBUG] User ${sender} (resolved: ${realSender}) tidak ditemukan di DB saat cek premium`))
+}
+const isPremium = isOwner ? true : prem
+// debug logs about premium removed per request
+// Hitung command lagi sekarang premium sudah diketahui
 const command = (prem || isOwner)? body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase() : isCommand
 const theOwner = sender == Ownerin
 const quoted = m.quoted ? m.quoted : m.msg === undefined? m: m.msg
@@ -107,8 +154,6 @@ if(!isOwner && global.session == 'sessions') return
 //return 
 
 //log(m.mtype == 'interactiveResponseMessage'? m : 'tidak ada' )
-//Import message.js
-await (await import('./message/message.js')).default(prefix,setReply, m, conn)
 //Import allfake.js
 //await (await import('./allfake.js')).default(m)
 
@@ -116,15 +161,31 @@ await (await import('./message/message.js')).default(prefix,setReply, m, conn)
 //Security / Keamanan
 const isBanchat = isGroup ? db.data.chats[from].banchat : false
 const isBanned = sender? _ban.check(senderNumber, ban) : false
-const isPremium = isOwner ? true :  db.data.users[sender].premiumTime !== 0 
+// isPremium sudah dihitung lebih awal setelah import message.js dan registrasi
 
-// Log chat user
+
+// Resolve display name for logs and store in DB if missing
+let displayName;
+if (pushname && pushname !== 'No Name') {
+  displayName = pushname
+} else {
+  try {
+    displayName = await conn.getName(realSender)
+  } catch (e) {
+    displayName = realSender.split('@')[0]
+  }
+}
+// Update user.name when available
+if (u && (!u.name || u.name === 'No Name' || u.name !== displayName)) {
+  try { u.name = displayName } catch (e) {}
+}
+
 if (body) {
   const chatType = isGroup ? 'GROUP' : 'PRIVATE'
-  const chatName = isGroup ? (groupName || 'Unknown Group') : (pushname || 'Unknown')
+  const chatName = isGroup ? (groupName || 'Unknown Group') : (displayName || 'Unknown')
   const logMsg = isGroup 
-    ? `[${chatType}] ${chatName} | ${pushname || 'No Name'} | ${body.slice(0, 50)}${body.length > 50 ? '...' : ''}`
-    : `[${chatType}] ${pushname || 'No Name'} | ${body.slice(0, 50)}${body.length > 50 ? '...' : ''}`
+    ? `[${chatType}] ${chatName} | ${displayName || 'No Name'} | ${body.slice(0, 50)}${body.length > 50 ? '...' : ''}`
+    : `[${chatType}] ${displayName || 'No Name'} | ${body.slice(0, 50)}${body.length > 50 ? '...' : ''}`
   console.log(chalk.cyan(logMsg))
 }
 

@@ -29,7 +29,8 @@ participant.admin = null;
 });// System-style log for demote
 try {
   const who = conn.decodeJid(participants[0]) || participants[0];
-  const whoName = await conn.getName(who).catch(() => who);
+  let whoName;
+  try { whoName = await conn.getName(who) } catch (e) { whoName = who }
   const groupName = (dataChat && dataChat.metadata && dataChat.metadata.subject) ? dataChat.metadata.subject : id;
   console.log(chalk.bgBlue.black(" SYSTEM "), chalk.magenta.bold('DEMOTE'), `${whoName} (${who}) -> ${groupName}`);
 } catch (err) {}
@@ -43,7 +44,8 @@ participant.admin = 'admin'
 // System-style log for promote
 try {
   const who = conn.decodeJid(participants[0]) || participants[0];
-  const whoName = await conn.getName(who).catch(() => who);
+  let whoName;
+  try { whoName = await conn.getName(who) } catch (e) { whoName = who }
   const groupName = (dataChat && dataChat.metadata && dataChat.metadata.subject) ? dataChat.metadata.subject : id;
   console.log(chalk.bgBlue.black(" SYSTEM "), chalk.blueBright.bold('PROMOTE'), `${whoName} (${who}) -> ${groupName}`);
 } catch (err) {}
@@ -62,7 +64,8 @@ let isBotAdmin = !!(bot && (bot.admin === 'admin' || bot.admin === 'superadmin')
 let sender = conn.decodeJid(anu.participants[0])
 // System-style log for join
 try {
-  const senderName = await conn.getName(sender).catch(() => sender);
+  let senderName;
+  try { senderName = await conn.getName(sender) } catch (e) { senderName = sender }
   const groupName = (dataChat && dataChat.metadata && dataChat.metadata.subject) ? dataChat.metadata.subject : id;
   console.log(chalk.bgGreen.black(" SYSTEM "), chalk.green.bold('JOIN'), `${senderName} (${sender}) -> ${groupName}`);
 } catch (err) {}
@@ -77,7 +80,8 @@ members.filter(item => item.id !== idToRemove);
 // System-style log for leave
 try {
   const who = conn.decodeJid(idToRemove) || idToRemove;
-  const whoName = await conn.getName(who).catch(() => who);
+  let whoName;
+  try { whoName = await conn.getName(who) } catch (e) { whoName = who }
   const groupName = (dataChat && dataChat.metadata && dataChat.metadata.subject) ? dataChat.metadata.subject : id;
   console.log(chalk.bgYellow.black(" SYSTEM "), chalk.yellow.bold('LEAVE'), `${whoName} (${who}) -> ${groupName}`);
 } catch (err) {}

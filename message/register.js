@@ -1,5 +1,21 @@
 export async function register(m) {
   try {
+    // Pastikan user tersimpan menggunakan full JID sebagai key (m.sender)
+    // Jika ada data lama yang menggunakan numeric key (contoh: '6285714627306'), pindahkan ke m.sender
+    const numericKey = m.senderNumber && typeof m.senderNumber === 'string' ? m.senderNumber.replace(/[^0-9+]/g, '') : null
+    if (!global.db.data.users[m.sender] && numericKey) {
+      const altKeys = [numericKey, `${numericKey}@s.whatsapp.net`, `${numericKey}@c.us`]
+      for (const k of altKeys) {
+        if (global.db.data.users[k]) {
+          // Migrasi data ke key JID penuh
+          global.db.data.users[m.sender] = global.db.data.users[k]
+          delete global.db.data.users[k]
+          console.log(chalk.green(`[MIGRATE] Moved user data from ${k} to ${m.sender}`))
+          break
+        }
+      }
+    }
+
     const user = global.db.data.users[m.sender];
     const chat = global.db.data.chats[m.chat];
     const prefix = db.data.settings["settingbot"].prefix;

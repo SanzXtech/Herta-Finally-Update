@@ -244,6 +244,47 @@ const connectToWhatsApp = async () => {
 
   //const { state } = useSingleFileAuthState('./session.json')
 
+  // Perform session cleanup (remove stale session files) if enabled
+  const performSessionCleanup = (dirPath, days = 7) => {
+    try {
+      if (!fs.existsSync(dirPath)) return 0
+      const ageMs = days * 24 * 60 * 60 * 1000
+      const files = fs.readdirSync(dirPath)
+      let removed = 0
+      for (const f of files) {
+        // Never remove credentials core file
+        if (f === 'creds.json') continue
+        const fp = path.join(dirPath, f)
+        try {
+          const s = fs.statSync(fp)
+          const age = Date.now() - s.mtimeMs
+          if (age > ageMs) {
+            fs.rmSync(fp, { recursive: true, force: true })
+            removed++
+          }
+        } catch (e) {
+          // ignore single file errors
+        }
+      }
+      return removed
+    } catch (e) {
+      console.error('performSessionCleanup failed:', e)
+      return 0
+    }
+  }
+
+  try {
+    if (global.autoClearSession) {
+      const removed = performSessionCleanup(global.session, global.clearSessionDays)
+      if (removed > 0) console.log(chalk.yellow(`[CLEANUP] Removed ${removed} stale session file(s) older than ${global.clearSessionDays} day(s)`))
+      // Schedule periodic cleanup
+      setInterval(() => {
+        const removedPeriodic = performSessionCleanup(global.session, global.clearSessionDays)
+        if (removedPeriodic > 0) console.log(chalk.yellow(`[CLEANUP] Periodic removed ${removedPeriodic} stale session file(s)`))
+      }, (global.clearSessionIntervalHours || 24) * 60 * 60 * 1000)
+    }
+  } catch (e) {}
+
   const { state, saveCreds } = await useMultiFileAuthState(session);
 
   const store = (typeof makeInMemoryStore === 'function') ? makeInMemoryStore({

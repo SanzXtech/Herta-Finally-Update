@@ -15,24 +15,14 @@ let handler = async (m, {
         if (anu.status != '200') throw Error(anu.message)
         anu = anu.result
         if (anu.length == 0) throw Error('Error : no data')
-        let c = 0
-        for (let x of anu) {
-            if (c == 0) await conn.sendMessage(m.chat, {
-                image: {
-                    url: x
-                },
-                caption: `Mengirim 1 dari ${anu.length} slide gambar.\n_(Sisanya akan dikirim via chat pribadi.)_`
-            }, {
-                quoted: m
-            })
-            else await conn.sendMessage(m.sender, {
-                image: {
-                    url: x
-                }
-            }, {
-                quoted: m
-            })
-            c += 1
+        for (let i = 0; i < anu.length; i++) {
+            const x = anu[i]
+            const caption = i === 0 ? `Mengirim 1 dari ${anu.length} slide gambar.` : undefined
+            // Kirim semua slide ke chat tempat perintah dipanggil (group atau private)
+            await conn.sendMessage(m.chat, {
+                image: { url: x },
+                ...(caption ? { caption } : {})
+            }, { quoted: m })
         }
     } catch (e) {
         console.log(e)

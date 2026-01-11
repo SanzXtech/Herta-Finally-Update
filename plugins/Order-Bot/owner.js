@@ -1,10 +1,11 @@
 let handler = async (m, { conn }) => {
-    const authorName = global.author || 'Sanz | ᯤ 𓈆 2%';
-    const botName = global.namebot || 'Herta-V2';
-    const ownerNumber = global.nomorOwner || '6281401689098'; // Ganti dengan nomor owner
-    const email = 'sanzonlyofficial@gmail.com';
-    const website = 'https://www.tiktok.com/@chopgt';
-    const tiktok = 'https://www.tiktok.com/@chopgt';
+    // Use settings from settings.js when available
+    const authorName = global.ownerName || global.authorName || 'Sanz | ᯤ 𓈆 2%';
+    const botName = global.botName || global.namebot || 'Herta-V2';
+    const ownerNumber = global.nomerOwner || global.ownerBot || '6281401689098';
+    const email = global.ownerEmail || 'sanzonlyofficial@gmail.com';
+    const website = global.myUrl || global.website || 'https://www.tiktok.com/@chopgt';
+    const tiktok = global.tiktok || 'https://www.tiktok.com/@chopgt';
 
     const fakeContact = {
         displayName: `👑 ${authorName} (Owner)`,

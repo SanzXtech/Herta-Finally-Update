@@ -21,6 +21,13 @@ global.username = "SanzXtech";
 global.repo = "HertaV3";
 global.token = "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";
 global.session = "session";
+// Auto clear session settings
+global.autoClearSession = true; // Enable automatic cleaning of old session files
+global.clearSessionDays = 7; // Remove session files older than N days (default: 7)
+global.clearSessionIntervalHours = 24; // Run periodic cleanup every N hours (default: 24)
+// Threshold-based trimming to avoid folder growth on low-memory environments
+global.clearSessionThreshold = 300; // Trigger trimming when detected trash files reach this count
+global.clearSessionTrimTo = 200; // When trimming, remove oldest files until count is down to this value
 global.runWith = "Heroku";
 global.language = "id";
 global.Qoted = "ftoko";

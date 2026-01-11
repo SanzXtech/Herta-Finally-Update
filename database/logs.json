@@ -1,17 +1,57 @@
 [
   {
+    "name": "C",
+    "command": "family100",
+    "query": "",
+    "time": "23:24:20",
+    "number": "6281396307341",
+    "group": "devina suka 2027"
+  },
+  {
+    "name": "sya",
+    "command": "family100",
+    "query": "",
+    "time": "23:24:21",
+    "number": "6289528613847",
+    "group": "devina suka 2027"
+  },
+  {
     "name": "apa ajah",
-    "command": "kick",
-    "query": "@48795643588829",
-    "time": "17:17:49",
+    "command": "apakah",
+    "query": "ini my",
+    "time": "23:24:30",
+    "number": "6285714627306",
+    "group": "devina suka 2027"
+  },
+  {
+    "name": "sya",
+    "command": "levelup",
+    "query": "",
+    "time": "23:25:35",
+    "number": "6289528613847",
+    "group": "devina suka 2027"
+  },
+  {
+    "name": "C",
+    "command": "levelup",
+    "query": "",
+    "time": "23:25:55",
+    "number": "6281396307341",
+    "group": "devina suka 2027"
+  },
+  {
+    "name": "No Name",
+    "command": "welcome",
+    "query": "on",
+    "time": "23:27:10",
     "number": "6285714627306",
     "group": "Herta Official [ 🟢 ]"
   },
   {
-    "name": "apa ajah",
+    "name": "No Name",
     "command": "backup",
     "query": "",
-    "time": "17:18:27",
+    "time": "23:45:41",
     "number": "6285714627306",
     "group": "Private chat"
   }

@@ -38,6 +38,7 @@ let handler = async (m, { conn, args, text }) => {
       }
 
     } else if (res.type === 'image') {
+      // Kirim semua gambar ke chat pemanggil (group atau private) — konsisten dengan fitur tiktokslide
       for (let i = 0; i < res.images.length; i++) {
         await conn.sendMessage(m.chat, {
           image: { url: res.images[i] },
