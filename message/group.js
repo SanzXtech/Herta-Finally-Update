@@ -96,7 +96,7 @@ const _rawParticipant = anu.participants[0] || '';
 const _botId = conn.user && (conn.user.id ? conn.user.id.split(":")[0] : (conn.user && conn.user.jid ? conn.user.jid.split("@")[0] : ''));
 // Skip system 'lid' participants unless the event concerns the bot itself
 if (_rawParticipant.includes('@lid') && !_rawParticipant.includes(_botId)) {
-  return log('log 1')
+  return;
 }
 if ((action == "remove" || action == "promote" || action == "demote") &&
 anu.participants[0].split("@")[0].includes(conn.user.id.split(":")[0])
@@ -225,10 +225,9 @@ const { id, participants, action } = anu;
 const _rawParticipant = anu.participants[0] || '';
 const _botId = conn.user && (conn.user.id ? conn.user.id.split(":")[0] : (conn.user && conn.user.jid ? conn.user.jid.split("@")[0] : ''));
 if(_rawParticipant.includes('@lid') && !_rawParticipant.includes(_botId)) {
-  console.log(chalk.bgBlue.black(' SYSTEM '), chalk.cyan('LID_EVENT'), `skipping non-bot system participant: ${_rawParticipant}`);
   return;
 } else if(_rawParticipant.includes('@lid') && _rawParticipant.includes(_botId)) {
-  console.log(chalk.bgBlue.black(' SYSTEM '), chalk.cyan('LID_EVENT'), 'event for bot itself, continuing')
+  // event for bot itself, continuing
 } 
 
 if ((action == "remove" || action == "promote" || action == "demote") &&
