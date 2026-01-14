@@ -178,7 +178,14 @@ async function clearSession() {
   }
 }
 
+// Fungsi reconnect yang bisa dipanggil dari handler global ketika terjadi Bad MAC
+let reconnectFn = null;
+let lastBadMacAt = 0;
+const BADMAC_COOLDOWN_MS = 60 * 1000; // 1 menit cooldown
+
 export const connectionUpdate = async (connectToWhatsApp, conn, update) => {
+  // Simpan referensi fungsi reconnect untuk dipanggil oleh handler global
+  reconnectFn = connectToWhatsApp;
   const { version, isLatest } = await fetchLatestBaileysVersion();
   const {
     connection,
@@ -362,14 +369,35 @@ export const connectionUpdate = async (connectToWhatsApp, conn, update) => {
 }; // akhir connection
 
 // Global error handlers to catch Bad MAC and similar session issues
+// Perubahan: jangan matikan proses ketika Bad MAC terdeteksi.
+// Sebagai gantinya hapus pre-key/session sementara dan lakukan reconnect grace
+// agar Baileys dapat "minta key lagi" ke client WhatsApp tanpa menghentikan bot.
 process.on('uncaughtException', async (err) => {
   try {
     console.error('[uncaughtException]', err && err.stack ? err.stack : err);
     const msg = (err && (err.message || err)) || '';
     if (msg && msg.toString().includes('Bad MAC')) {
-      console.error('[SESSION] Detected Bad MAC error — clearing session files and requesting restart');
+      console.error('[SESSION] Detected Bad MAC error — clearing session files and attempting graceful reconnect');
       await clearSession();
-      if (process.send) process.send('reset');
+      const now = Date.now();
+      if (reconnectFn && (now - lastBadMacAt) > BADMAC_COOLDOWN_MS) {
+        lastBadMacAt = now;
+        setTimeout(async () => {
+          try {
+            console.log('[SESSION] Triggering reconnect to request new keys from client...');
+            try {
+              if (global.nomerOwner && global.conn) {
+                await global.conn.sendMessage(`${global.nomerOwner}@s.whatsapp.net`, { text: "[AUTO] Bad MAC detected — meminta key ulang ke client. Bot tetap berjalan." });
+              }
+            } catch (notifyErr) { console.error('[SESSION] Failed to notify owner:', notifyErr); }
+            await reconnectFn();
+          } catch (e) {
+            console.error('[SESSION] Reconnect after Bad MAC failed:', e);
+          }
+        }, 3000);
+      } else {
+        console.log('[SESSION] Reconnect suppressed (cooldown or no reconnect function available)');
+      }
     }
   } catch (e) {
     console.error('Error handling uncaughtException:', e);
@@ -381,9 +409,27 @@ process.on('unhandledRejection', async (reason) => {
     console.error('[unhandledRejection]', reason);
     const msg = (reason && (reason.message || reason)) || '';
     if (msg && msg.toString().includes('Bad MAC')) {
-      console.error('[SESSION] Detected Bad MAC in rejection — clearing session files and requesting restart');
+      console.error('[SESSION] Detected Bad MAC in rejection — clearing session files and attempting graceful reconnect');
       await clearSession();
-      if (process.send) process.send('reset');
+      const now = Date.now();
+      if (reconnectFn && (now - lastBadMacAt) > BADMAC_COOLDOWN_MS) {
+        lastBadMacAt = now;
+        setTimeout(async () => {
+          try {
+            console.log('[SESSION] Triggering reconnect to request new keys from client...');
+            try {
+              if (global.nomerOwner && global.conn) {
+                await global.conn.sendMessage(`${global.nomerOwner}@s.whatsapp.net`, { text: "[AUTO] Bad MAC detected — meminta key ulang ke client. Bot tetap berjalan." });
+              }
+            } catch (notifyErr) { console.error('[SESSION] Failed to notify owner:', notifyErr); }
+            await reconnectFn();
+          } catch (e) {
+            console.error('[SESSION] Reconnect after Bad MAC failed:', e);
+          }
+        }, 3000);
+      } else {
+        console.log('[SESSION] Reconnect suppressed (cooldown or no reconnect function available)');
+      }
     }
   } catch (e) {
     console.error('Error handling unhandledRejection:', e);
