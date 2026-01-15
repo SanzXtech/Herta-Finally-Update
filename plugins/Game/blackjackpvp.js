@@ -1,5 +1,23 @@
 const items = ["money", "chip", "diamond", "bank", "emerald", "gold"];
 
+function fkontak(conn, m) {
+  let sender = m.sender
+  let nomor = sender.split('@')[0]
+  let name = m.pushName || nomor
+  return {
+    key: {
+      participant: '0@s.whatsapp.net',
+      remoteJid: 'status@broadcast'
+    },
+    message: {
+      contactMessage: {
+        displayName: name,
+        vcard: `BEGIN:VCARD\nVERSION:3.0\nN:XL;${name};;;\nFN:${name}\nitem1.TEL;waid=${nomor}:${nomor}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`
+      }
+    }
+  }
+}
+
 async function handler(m, { conn, usedPrefix, command, text }) {
 conn.blackjack2 = conn.blackjack2 ? conn.blackjack2 : {};
 
@@ -120,7 +138,7 @@ renderLargerThumbnail: true,
 if (subCommand === 'create') {
 let existingRoom = findUserRoom(m.sender);
 if (existingRoom) {
-return m.reply("❌ You are already in a room! Leave first with blackjackpvp leave");
+return m.reply(`❌ You are already in a room! Leave first with ${usedPrefix}blackjackpvp leave`);
 }
 
 let roomId = generateRoomId();
@@ -135,7 +153,8 @@ gameData: null,
 chatId: m.chat
 };
 
-return conn.reply(m.chat, `🎰 BLACKJACK PVP ROOM CREATED 🎰
+return conn.sendMessage(m.chat, {
+  text: `🎰 BLACKJACK PVP ROOM CREATED 🎰
 
 ╭─ 🏠 ROOM INFO
 │ Room ID: ${roomId}
@@ -149,30 +168,31 @@ return conn.reply(m.chat, `🎰 BLACKJACK PVP ROOM CREATED 🎰
 ╰─ ⚙️ CONTROLS
 
 Commands:
-• blackjackpvp bet <item> <amount> - Change bet
-• blackjackpvp start - Start game (min 2 players)
-• blackjackpvp delete - Delete room
+• ${usedPrefix}blackjackpvp bet <item> <amount> - Change bet
+• ${usedPrefix}blackjackpvp start - Start game (min 2 players)
+• ${usedPrefix}blackjackpvp delete - Delete room
 
-Others can join with: blackjackpvp join`, m, {
-mentions: [m.sender],
-contextInfo: {
-externalAdReply: {
-title: "🎰 BLACKJACK PVP",
-body: "Room Created",
-thumbnailUrl: "https://telegra.ph/file/1703cff0a758d0ef8f84f.png",
-sourceUrl: "",
-mediaType: 1,
-renderLargerThumbnail: true,
-},
-},
-});
+Others can join with: ${usedPrefix}blackjackpvp join`,
+  mentions: [m.sender],
+  contextInfo: {
+    mentionedJid: [m.sender],
+    externalAdReply: {
+      title: "🎰 BLACKJACK PVP",
+      body: "Room Created",
+      thumbnailUrl: "https://telegra.ph/file/1703cff0a758d0ef8f84f.png",
+      sourceUrl: "",
+      mediaType: 1,
+      renderLargerThumbnail: true,
+    },
+  },
+}, { quoted: fkontak(conn, m) }) ;
 }
 
 // Join Room
 if (subCommand === 'join') {
 let existingRoom = findUserRoom(m.sender);
 if (existingRoom) {
-return m.reply("❌ You are already in a room! Leave first with blackjackpvp leave");
+return m.reply(`❌ You are already in a room! Leave first with ${usedPrefix}blackjackpvp leave`);
 }
 
 let availableRooms = Object.values(conn.blackjack2).filter(room =>
@@ -182,7 +202,7 @@ room.players.length < 8
 );
 
 if (availableRooms.length === 0) {
-return m.reply("❌ No available rooms in this chat. Create one with blackjackpvp create");
+return m.reply(`❌ No available rooms in this chat. Create one with ${usedPrefix}blackjackpvp create`);
 }
 
 let room = availableRooms[0];
@@ -190,7 +210,8 @@ room.players.push({ id: m.sender, name: getUserName(m.sender) });
 
 let playersList = room.players.map(p => `@${p.name}`).join(', ');
 
-return conn.reply(m.chat, `🎰 JOINED BLACKJACK ROOM 🎰
+return conn.sendMessage(m.chat, {
+  text: `🎰 JOINED BLACKJACK ROOM 🎰
 
 ╭─ 🏠 ROOM INFO
 │ Room ID: ${room.id}
@@ -204,19 +225,20 @@ return conn.reply(m.chat, `🎰 JOINED BLACKJACK ROOM 🎰
 ╰─ 📊 STATUS
 
 Status: Waiting for creator to start
-Min players: 2`, m, {
-mentions: room.players.map(p => p.id),
-contextInfo: {
-externalAdReply: {
-title: "🎰 BLACKJACK PVP",
-body: "Joined Room",
-thumbnailUrl: "https://telegra.ph/file/1703cff0a758d0ef8f84f.png",
-sourceUrl: "",
-mediaType: 1,
-renderLargerThumbnail: true,
-},
-},
-});
+Min players: 2`,
+  mentions: room.players.map(p => p.id),
+  contextInfo: {
+    mentionedJid: room.players.map(p => p.id),
+    externalAdReply: {
+      title: "🎰 BLACKJACK PVP",
+      body: "Joined Room",
+      thumbnailUrl: "https://telegra.ph/file/1703cff0a758d0ef8f84f.png",
+      sourceUrl: "",
+      mediaType: 1,
+      renderLargerThumbnail: true,
+    },
+  },
+}, { quoted: fkontak(conn, m) }) ;
 }
 
 // Leave Room
@@ -304,7 +326,7 @@ return conn.reply(m.chat, `🎰 BET UPDATED 🎰
 │ Players: ${room.players.length}/8
 ╰─ ⚙️ READY TO START
 
-Use blackjackpvp start to begin the game`, m, {
+Use ${usedPrefix}blackjackpvp start to begin the game`, m, {
 contextInfo: {
 externalAdReply: {
 title: "🎰 BLACKJACK PVP",
@@ -385,7 +407,8 @@ let playersList = room.players.map((p, i) =>
 `${i === room.currentTurn ? '🔥' : '⭐'} @${p.name}`
 ).join('\n│ ');
 
-return conn.reply(m.chat, `🎰 BLACKJACK PVP STARTED 🎰
+return conn.sendMessage(m.chat, {
+  text: `🎰 BLACKJACK PVP STARTED 🎰
 
 ╭─ 🏠 ROOM INFO
 │ Room ID: ${room.id}
@@ -407,22 +430,23 @@ return conn.reply(m.chat, `🎰 BLACKJACK PVP STARTED 🎰
 Commands:
 • hit - Take another card
 • stand - End your turn
-• double - Double bet + 1 card only`, m, {
-mentions: room.players.map(p => p.id),
-contextInfo: {
-externalAdReply: {
-title: "🎰 BLACKJACK PVP",
-body: "Game Started!",
-thumbnailUrl: "https://telegra.ph/file/1703cff0a758d0ef8f84f.png",
-sourceUrl: "",
-mediaType: 1,
-renderLargerThumbnail: true,
-},
-},
-});
+• double - Double bet + 1 card only`,
+  mentions: room.players.map(p => p.id),
+  contextInfo: {
+    mentionedJid: room.players.map(p => p.id),
+    externalAdReply: {
+      title: "🎰 BLACKJACK PVP",
+      body: "Game Started!",
+      thumbnailUrl: "https://telegra.ph/file/1703cff0a758d0ef8f84f.png",
+      sourceUrl: "",
+      mediaType: 1,
+      renderLargerThumbnail: true,
+    },
+  },
+}, { quoted: fkontak(conn, m) }) ;
 }
 
-return m.reply("❌ Unknown command. Use blackjackpvp for help");
+return m.reply(`❌ Unknown command. Use ${usedPrefix}blackjackpvp for help`);
 }
 
 handler.before = async (m) => {
@@ -503,48 +527,25 @@ let values = cards.map(card => card.replace(/[♠♥♦♣]/g, ''));
 return (values.includes("A") && (values.includes("10") || values.includes("J") || values.includes("Q") || values.includes("K")));
 };
 
-let moveToNextPlayer = () => {
-    // Cek semua pemain sudah selesai atau belum
-    let allPlayersFinished = true;
-    
-    for (let player of room.players) {
-        let playerHand = gameData.playerHands[player.id];
-        if (playerHand.status === 'active') {
-            allPlayersFinished = false;
-            break;
-        }
+// Find next active player index or return -1 if none
+let getNextActiveIndex = (fromIndex) => {
+    for (let i = 1; i <= room.players.length; i++) {
+        const idx = (fromIndex + i) % room.players.length;
+        const p = room.players[idx];
+        const hand = gameData.playerHands[p.id];
+        if (hand && hand.status === 'active') return idx;
     }
-    
-    // Jika semua pemain sudah selesai, return true untuk resolve game
-    if (allPlayersFinished) {
-        return true;
+    return -1; // no active player left
+};
+
+// Advance to next active, return true if game should resolve
+let advanceToNextPlayerOrResolve = async () => {
+    const nextIndex = getNextActiveIndex(room.currentTurn);
+    if (nextIndex === -1) {
+        return true; // resolve game
     }
-    
-    // Cari pemain berikutnya yang masih aktif
-    let originalTurn = room.currentTurn;
-    let foundActivePlayer = false;
-    
-    do {
-        room.currentTurn = (room.currentTurn + 1) % room.players.length;
-        let currentPlayerHand = gameData.playerHands[room.players[room.currentTurn].id];
-        
-        if (currentPlayerHand.status === 'active') {
-            foundActivePlayer = true;
-            break;
-        }
-        
-        // Jika sudah kembali ke posisi awal dan tidak ada pemain aktif
-        if (room.currentTurn === originalTurn) {
-            break;
-        }
-    } while (!foundActivePlayer);
-    
-    // Double check: jika tidak ada pemain aktif yang ditemukan
-    if (!foundActivePlayer) {
-        return true; // Semua pemain sudah selesai
-    }
-    
-    return false; // Masih ada pemain aktif
+    room.currentTurn = nextIndex;
+    return false; // continue game
 };
 
 let resolveGame = async () => {
@@ -618,19 +619,21 @@ let message = `🎰 BLACKJACK PVP RESULTS 🎰
 
 Room has been dissolved`;
 
-await conn.reply(m.chat, message, m, {
-mentions: room.players.map(p => p.id),
-contextInfo: {
-externalAdReply: {
-title: "🎰 BLACKJACK PVP",
-body: "Game Complete",
-thumbnailUrl: "https://telegra.ph/file/1703cff0a758d0ef8f84f.png",
-sourceUrl: "",
-mediaType: 1,
-renderLargerThumbnail: true,
-},
-},
-});
+await conn.sendMessage(m.chat, {
+  text: message,
+  mentions: room.players.map(p => p.id),
+  contextInfo: {
+    mentionedJid: room.players.map(p => p.id),
+    externalAdReply: {
+      title: "🎰 BLACKJACK PVP",
+      body: "Game Complete",
+      thumbnailUrl: "https://telegra.ph/file/1703cff0a758d0ef8f84f.png",
+      sourceUrl: "",
+      mediaType: 1,
+      renderLargerThumbnail: true,
+    },
+  },
+}, { quoted: fkontak(conn, m) }) ;
 
 
 delete conn.blackjack2[roomId];
@@ -646,19 +649,19 @@ playerHand.canDouble = false;
 if (total > 21) {
 playerHand.status = 'bust';
 
-let allDone = moveToNextPlayer();    
-if (allDone) {    
-  await resolveGame();    
-  return;    
-}    
+let shouldResolve = await advanceToNextPlayerOrResolve();
+if (shouldResolve) {
+  await resolveGame();
+  return;
+}
 
-let nextPlayer = room.players[room.currentTurn];    
-let nextHand = gameData.playerHands[nextPlayer.id];    
-let nextTotal = calculateTotal(nextHand.cards);    
+let nextPlayer = room.players[room.currentTurn];
+let nextHand = gameData.playerHands[nextPlayer.id];
+let nextTotal = calculateTotal(nextHand.cards);
 
-let playersList = room.players.map((p, i) =>     
-  `${i === room.currentTurn ? '🔥' : '⭐'} @${p.name}${gameData.playerHands[p.id].status === 'bust' ? ' 💥' : ''}`    
-).join('\n│ ');    
+let playersList = room.players.map((p, i) =>
+  `${i === room.currentTurn ? '🔥' : '⭐'} @${p.name}${gameData.playerHands[p.id].status === 'bust' ? ' 💥' : ''}`
+).join('\n│ ');
 
 let message = `🎰 PLAYER BUST 🎰
 
@@ -682,25 +685,27 @@ Commands:
 • stand - End your turn
 • double - Double bet + 1 card only`;
 
-return conn.reply(m.chat, message, m, {
-mentions: room.players.map(p => p.id),
-contextInfo: {
-externalAdReply: {
-title: "🎰 BLACKJACK PVP",
-body: "Player Bust",
-thumbnailUrl: "https://telegra.ph/file/1703cff0a758d0ef8f84f.png",
-sourceUrl: "",
-mediaType: 1,
-renderLargerThumbnail: true,
-},
-},
-});
+return conn.sendMessage(m.chat, {
+  text: message,
+  mentions: room.players.map(p => p.id),
+  contextInfo: {
+    mentionedJid: room.players.map(p => p.id),
+    externalAdReply: {
+      title: "🎰 BLACKJACK PVP",
+      body: "Player Bust",
+      thumbnailUrl: "https://telegra.ph/file/1703cff0a758d0ef8f84f.png",
+      sourceUrl: "",
+      mediaType: 1,
+      renderLargerThumbnail: true,
+    },
+  },
+}, { quoted: fkontak(conn, m) }) ;
 }
 
-let allDone = moveToNextPlayer();
-if (allDone) {
-await resolveGame();
-return;
+let shouldResolve = await advanceToNextPlayerOrResolve();
+if (shouldResolve) {
+  await resolveGame();
+  return;
 }
 
 let nextPlayer = room.players[room.currentTurn];
@@ -708,7 +713,7 @@ let nextHand = gameData.playerHands[nextPlayer.id];
 let nextTotal = calculateTotal(nextHand.cards);
 
 let playersList = room.players.map((p, i) =>
-`${i === room.currentTurn ? '🔥' : '⭐'} @${p.name}${gameData.playerHands[p.id].status !== 'active' ? ' ✅' : ''}`
+  `${i === room.currentTurn ? '🔥' : '⭐'} @${p.name}${gameData.playerHands[p.id].status !== 'active' ? ' ✅' : ''}`
 ).join('\n│ ');
 
 let message = `🎰 CARD DEALT 🎰
@@ -733,29 +738,31 @@ Commands:
 • stand - End your turn
 • double - Double bet + 1 card only`;
 
-return conn.reply(m.chat, message, m, {
-mentions: room.players.map(p => p.id),
-contextInfo: {
-externalAdReply: {
-title: "🎰 BLACKJACK PVP",
-body: "Card Dealt",
-thumbnailUrl: "https://telegra.ph/file/1703cff0a758d0ef8f84f.png",
-sourceUrl: "",
-mediaType: 1,
-renderLargerThumbnail: true,
-},
-},
-});
+return conn.sendMessage(m.chat, {
+  text: message,
+  mentions: room.players.map(p => p.id),
+  contextInfo: {
+    mentionedJid: room.players.map(p => p.id),
+    externalAdReply: {
+      title: "🎰 BLACKJACK PVP",
+      body: "Card Dealt",
+      thumbnailUrl: "https://telegra.ph/file/1703cff0a758d0ef8f84f.png",
+      sourceUrl: "",
+      mediaType: 1,
+      renderLargerThumbnail: true,
+    },
+  },
+}, { quoted: fkontak(conn, m) }) ;
 }
 
 if (txt === "stand") {
 playerHand.status = 'stand';
 let total = calculateTotal(playerHand.cards);
 
-let allDone = moveToNextPlayer();
-if (allDone) {
-await resolveGame();
-return;
+let shouldResolve = await advanceToNextPlayerOrResolve();
+if (shouldResolve) {
+  await resolveGame();
+  return;
 }
 
 let nextPlayer = room.players[room.currentTurn];
@@ -763,7 +770,7 @@ let nextHand = gameData.playerHands[nextPlayer.id];
 let nextTotal = calculateTotal(nextHand.cards);
 
 let playersList = room.players.map((p, i) =>
-`${i === room.currentTurn ? '🔥' : '⭐'} @${p.name}${gameData.playerHands[p.id].status !== 'active' ? ' ✅' : ''}`
+  `${i === room.currentTurn ? '🔥' : '⭐'} @${p.name}${gameData.playerHands[p.id].status !== 'active' ? ' ✅' : ''}`
 ).join('\n│ ');
 
 let message = `🎰 PLAYER STANDS 🎰
@@ -788,19 +795,21 @@ Commands:
 • stand - End your turn
 • double - Double bet + 1 card only`;
 
-return conn.reply(m.chat, message, m, {
-mentions: room.players.map(p => p.id),
-contextInfo: {
-externalAdReply: {
-title: "🎰 BLACKJACK PVP",
-body: "Player Stands",
-thumbnailUrl: "https://telegra.ph/file/1703cff0a758d0ef8f84f.png",
-sourceUrl: "",
-mediaType: 1,
-renderLargerThumbnail: true,
-},
-},
-});
+return conn.sendMessage(m.chat, {
+  text: message,
+  mentions: room.players.map(p => p.id),
+  contextInfo: {
+    mentionedJid: room.players.map(p => p.id),
+    externalAdReply: {
+      title: "🎰 BLACKJACK PVP",
+      body: "Player Stands",
+      thumbnailUrl: "https://telegra.ph/file/1703cff0a758d0ef8f84f.png",
+      sourceUrl: "",
+      mediaType: 1,
+      renderLargerThumbnail: true,
+    },
+  },
+}, { quoted: fkontak(conn, m) }) ;
 }
 
 if (txt === "double") {
@@ -828,10 +837,10 @@ playerHand.status = 'bust';
 playerHand.status = 'stand';
 }
 
-let allDone = moveToNextPlayer();
-if (allDone) {
-await resolveGame();
-return;
+let shouldResolve = await advanceToNextPlayerOrResolve();
+if (shouldResolve) {
+  await resolveGame();
+  return;
 }
 
 let nextPlayer = room.players[room.currentTurn];
@@ -839,7 +848,7 @@ let nextHand = gameData.playerHands[nextPlayer.id];
 let nextTotal = calculateTotal(nextHand.cards);
 
 let playersList = room.players.map((p, i) =>
-`${i === room.currentTurn ? '🔥' : '⭐'} @${p.name}${gameData.playerHands[p.id].status === 'bust' ? ' 💥' : gameData.playerHands[p.id].status === 'stand' ? ' ✅' : ''}`
+  `${i === room.currentTurn ? '🔥' : '⭐'} @${p.name}${gameData.playerHands[p.id].status === 'bust' ? ' 💥' : gameData.playerHands[p.id].status === 'stand' ? ' ✅' : ''}`
 ).join('\n│ ');
 
 let resultText = total > 21 ? 'DOUBLED & BUST' : 'DOUBLED & STAND';
@@ -866,19 +875,21 @@ Commands:
 • stand - End your turn
 • double - Double bet + 1 card only`;
 
-return conn.reply(m.chat, message, m, {
-mentions: room.players.map(p => p.id),
-contextInfo: {
-externalAdReply: {
-title: "🎰 BLACKJACK PVP",
-body: total > 21 ? "Double Down Bust" : "Double Down Stand",
-thumbnailUrl: "https://telegra.ph/file/1703cff0a758d0ef8f84f.png",
-sourceUrl: "",
-mediaType: 1,
-renderLargerThumbnail: true,
-},
-},
-});
+return conn.sendMessage(m.chat, {
+  text: message,
+  mentions: room.players.map(p => p.id),
+  contextInfo: {
+    mentionedJid: room.players.map(p => p.id),
+    externalAdReply: {
+      title: "🎰 BLACKJACK PVP",
+      body: total > 21 ? "Double Down Bust" : "Double Down Stand",
+      thumbnailUrl: "https://telegra.ph/file/1703cff0a758d0ef8f84f.png",
+      sourceUrl: "",
+      mediaType: 1,
+      renderLargerThumbnail: true,
+    },
+  },
+}, { quoted: fkontak(conn, m) }) ;
 }
 
 } catch (error) {
